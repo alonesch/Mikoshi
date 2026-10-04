@@ -1,0 +1,27 @@
+{
+  "name": "mikoshi",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:first-use": "node apps/desktop/scripts/first-use.mjs",
+    "typecheck": "npm run typecheck --workspace=@mikoshi/desktop",
+    "dev": "npm run dev --workspace=@mikoshi/desktop",
+    "build": "npm run build --workspace=@mikoshi/desktop",
+    "preview": "npm run preview --workspace=@mikoshi/desktop",
+    "test": "npm run test --workspace=@mikoshi/desktop",
+    "dist:win": "npm run dist:win --workspace=@mikoshi/desktop",
+    "format:check": "npm run format:check --workspace=@mikoshi/desktop",
+    "format": "npm run format --workspace=@mikoshi/desktop",
+    "postinstall": "install-electron"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "overrides": {
+    "@electron/get": "5.1.0"
+  },
+  "version": "0.0.1"
+}

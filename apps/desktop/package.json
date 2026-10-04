@@ -1,0 +1,64 @@
+{
+  "name": "@mikoshi/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "main": "out/main/index.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "electron": "44.5.1",
+    "electron-builder": "26.17.0",
+    "electron-vite": "5.0.0",
+    "prettier": "3.6.2",
+    "typescript": "^7.0.2",
+    "vite": "7.3.6"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.0",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/xterm": "6.0.0",
+    "node-pty": "1.1.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "3.25.76"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.renderer.json",
+    "test": "node --test tests/*.test.ts",
+    "dist:win": "npm run build && electron-builder --win nsis --x64",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" \"tests/**/*.{ts,mjs}\" \"scripts/**/*.mjs\" \"*.json\" electron.vite.config.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" \"tests/**/*.{ts,mjs}\" \"scripts/**/*.mjs\" \"*.json\" electron.vite.config.ts",
+    "test:electron": "node tests/electron-smoke.mjs"
+  },
+  "description": "Memória canônica portátil e agentes locais por projeto.",
+  "author": "Mikoshi contributors",
+  "build": {
+    "asar": true,
+    "appId": "org.mikoshi.desktop",
+    "productName": "Mikoshi",
+    "nsis": {
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false,
+      "artifactName": "Mikoshi-Setup-${version}.${ext}",
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "directories": {
+      "output": "release"
+    }
+  }
+}
