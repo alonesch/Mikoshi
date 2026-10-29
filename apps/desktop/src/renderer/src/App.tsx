@@ -3,6 +3,9 @@ import type { JSX } from "react";
 import { AgentCanvas } from "./AgentCanvas";
 import type { AgentCanvasCreation } from "./AgentCanvas";
 import { buildAgentCanvasModel, type AgentCanvasModel } from "./agent-canvas-model";
+import mikoshiLogo from "./assets/mikoshi-logo.png";
+import { WindowControls } from "./WindowControls";
+import { ScrambleText } from "./ScrambleText";
 import type {
   AgentCanvasState,
   AgentRole,
@@ -283,7 +286,7 @@ export function App(): JSX.Element {
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null);
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<"canvas" | "memory">("canvas");
   const [projectFilter, setProjectFilter] = useState("");
   const [busy, setBusy] = useState(false);
@@ -612,7 +615,13 @@ export function App(): JSX.Element {
 
   return (
     <main className="mikoshi-shell">
-      <header className="app-topbar">
+      <header
+        className="app-topbar"
+        onDoubleClick={(event) => {
+          if (event.target instanceof Element && event.target.closest("button")) return;
+          void window.mikoshi.controlWindow("maximize");
+        }}
+      >
         <button
           aria-label={sidebarOpen ? "Recolher menu" : "Abrir menu"}
           className="icon-button"
@@ -621,8 +630,13 @@ export function App(): JSX.Element {
         >
           ☰
         </button>
-        <strong>{snapshot?.project.name ?? "Mikoshi"}</strong>
-        <span className="badge">Canvas de agentes</span>
+        <span className="app-brand">
+          <img alt="Mikoshi AI Orchestrator" src={mikoshiLogo} />
+        </span>
+        <span className="app-context">
+          <strong>{snapshot?.project.name ?? "Selecione um projeto"}</strong>
+        </span>
+        <WindowControls />
       </header>
       {error && (
         <p className="alert" role="alert">
@@ -653,7 +667,9 @@ export function App(): JSX.Element {
               +
             </button>
           </div>
-          <strong className="drawer-section-label">WORKSPACES</strong>
+          <strong className="drawer-section-label">
+            <ScrambleText text="WORKSPACES" />
+          </strong>
           <nav className="workspace-list">
             {projects
               .filter((project) =>
@@ -685,12 +701,12 @@ export function App(): JSX.Element {
               className={activeView === "canvas" ? "selected" : ""}
               onClick={() => setActiveView("canvas")}
             >
-              Canvas
+              <ScrambleText text="Canvas" />
             </button>
           </div>
           <div className="drawer-footer">
             <button className="secondary" onClick={() => setSettingsOpen(true)}>
-              Configurações
+              <ScrambleText text="Configurações" />
             </button>
           </div>
         </aside>
@@ -717,6 +733,7 @@ export function App(): JSX.Element {
                 onDeleteAgent={async () => undefined}
                 onCreateCanvasAgent={async () => false}
                 onOpenSettings={() => setSettingsOpen(true)}
+                onCanvasBackgroundClick={() => setSidebarOpen(false)}
                 onSaveCanvas={async () => undefined}
               />
             </section>
@@ -1071,6 +1088,7 @@ export function App(): JSX.Element {
                 onDeleteAgent={handleDeleteCanvasAgent}
                 onCreateCanvasAgent={handleCreateCanvasAgent}
                 onOpenSettings={() => setSettingsOpen(true)}
+                onCanvasBackgroundClick={() => setSidebarOpen(false)}
                 onSaveCanvas={handleSaveAgentCanvas}
               />
             </section>
@@ -1327,67 +1345,88 @@ export function App(): JSX.Element {
             className="settings-dialog"
             role="dialog"
           >
-            <div className="canvas-heading">
-              <div>
-                <h2>Configurações · Providers</h2>
-                <p className="muted">
-                  Verifique uma CLI para localizar o executável nesta máquina e
-                  adicioná-la ao workspace.
-                </p>
-              </div>
-              <div className="settings-header-actions">
-                <button
-                  className="secondary"
-                  onClick={() => {
-                    setSettingsOpen(false);
-                    setActiveView("memory");
-                  }}
-                >
-                  Memória e Engram
-                </button>
-                <button className="secondary" onClick={() => setSettingsOpen(false)}>
-                  Fechar
-                </button>
-              </div>
+            <div className="settings-masthead">
+              <span className="settings-overline">MIKOSHI / SISTEMA</span>
+              <button
+                aria-label="Fechar configurações"
+                className="settings-close"
+                onClick={() => setSettingsOpen(false)}
+              >
+                ×
+              </button>
             </div>
-            {providerIds.map((providerId) => {
-              const registered = providers.find((entry) => entry.provider === providerId);
-              return (
-                <article className="settings-provider" key={providerId}>
-                  <div>
-                    <strong>{providerNames[providerId]}</strong>
-                    <small className="muted">
-                      {registered
-                        ? registered.installed
-                          ? `${registered.version} · ${registered.message}`
-                          : registered.message
-                        : "Ainda não verificado nesta máquina."}
-                    </small>
-                  </div>
-                  <button
-                    className={registered ? "secondary" : ""}
-                    disabled={busy}
-                    onClick={() =>
-                      void action(async () => {
-                        const status = await window.mikoshi.verifyProvider(providerId);
-                        setProviders((current) => [
-                          status,
-                          ...current.filter((entry) => entry.provider !== providerId),
-                        ]);
-                        setNotice(
-                          status.installed
-                            ? `${providerNames[providerId]} encontrado e adicionado.`
-                            : `${providerNames[providerId]} não foi encontrado.`,
-                        );
-                      })
-                    }
-                  >
-                    {registered ? "Verificar novamente" : "Verificar e adicionar"}
-                  </button>
-                </article>
-              );
-            })}
-            <p className="muted">
+            <h2>
+              <ScrambleText text="CONFIGURAÇÕES" />
+            </h2>
+            <nav aria-label="Seções das configurações" className="settings-navigation">
+              <span className="active">
+                <ScrambleText text="PROVIDERS" />
+              </span>
+              <button disabled title="Disponível em uma etapa futura">
+                MEMÓRIA / ENGRAM <span aria-hidden="true">BLOQUEADO</span>
+              </button>
+            </nav>
+            <div className="settings-intro">
+              <span className="settings-section-index">01 / REDE LOCAL</span>
+              <h3>
+                <ScrambleText text="Executáveis disponíveis" />
+              </h3>
+              <p>Verifique uma CLI instalada nesta máquina para ativá-la no workspace.</p>
+            </div>
+            <div className="settings-provider-list">
+              {providerIds.map((providerId) => {
+                const registered = providers.find(
+                  (entry) => entry.provider === providerId,
+                );
+                return (
+                  <article className="settings-provider" key={providerId}>
+                    <span className="settings-provider-index">
+                      {String(providerIds.indexOf(providerId) + 1).padStart(2, "0")}
+                    </span>
+                    <div className="settings-provider-main">
+                      <strong>{providerNames[providerId]}</strong>
+                      <small className="muted">
+                        {registered
+                          ? registered.installed
+                            ? `${registered.version} · ${registered.message}`
+                            : registered.message
+                          : "Ainda não verificado nesta máquina."}
+                      </small>
+                    </div>
+                    <span
+                      className={`settings-provider-status ${registered?.installed ? "online" : "offline"}`}
+                    >
+                      {registered?.installed ? "DISPONÍVEL" : "NÃO VERIFICADO"}
+                    </span>
+                    <button
+                      className={registered ? "secondary" : ""}
+                      disabled={busy}
+                      onClick={() =>
+                        void action(async () => {
+                          const status = await window.mikoshi.verifyProvider(providerId);
+                          setProviders((current) => [
+                            status,
+                            ...current.filter((entry) => entry.provider !== providerId),
+                          ]);
+                          setNotice(
+                            status.installed
+                              ? `${providerNames[providerId]} encontrado e adicionado.`
+                              : `${providerNames[providerId]} não foi encontrado.`,
+                          );
+                        })
+                      }
+                    >
+                      <ScrambleText
+                        text={
+                          registered ? "Verificar novamente" : "Verificar e adicionar"
+                        }
+                      />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+            <p className="settings-footnote">
               A autenticação continua sob controle da CLI local. Os executáveis não são
               portados no Engram.
             </p>

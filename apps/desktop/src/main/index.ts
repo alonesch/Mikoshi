@@ -18,6 +18,10 @@ function createWindow(): void {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
+    minWidth: 780,
+    minHeight: 520,
+    frame: false,
+    backgroundColor: "#090b13",
     webPreferences: {
       preload: join(import.meta.dirname, "../preload/index.cjs"),
       contextIsolation: true,
@@ -25,6 +29,11 @@ function createWindow(): void {
       sandbox: true,
     },
   });
+  window.setMenu(null);
+  window.on("maximize", () => window.webContents.send("mikoshi:window-maximized", true));
+  window.on("unmaximize", () =>
+    window.webContents.send("mikoshi:window-maximized", false),
+  );
 
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event) => event.preventDefault());
