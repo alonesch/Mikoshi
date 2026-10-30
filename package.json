@@ -23,5 +23,14 @@
   "overrides": {
     "@electron/get": "5.1.0"
   },
+  "devDependencies": {
+    "electron": "44.5.1"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "node-pty@1.1.0": true
+  },
   "version": "0.0.1"
 }
