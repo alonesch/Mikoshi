@@ -2,6 +2,14 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { AgentHandoffEvent, AgentTerminalEvent, MikoshiApi } from "../contracts";
 
 contextBridge.exposeInMainWorld("mikoshi", {
+  controlWindow: (action) => ipcRenderer.invoke("mikoshi:control-window", action),
+  isWindowMaximized: () => ipcRenderer.invoke("mikoshi:is-window-maximized"),
+  onWindowMaximized: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, maximized: boolean) =>
+      listener(maximized);
+    ipcRenderer.on("mikoshi:window-maximized", handler);
+    return () => ipcRenderer.removeListener("mikoshi:window-maximized", handler);
+  },
   getRuntimeInfo: () => ipcRenderer.invoke("mikoshi:get-runtime-info"),
   listProjects: () => ipcRenderer.invoke("mikoshi:list-projects"),
   selectProject: () => ipcRenderer.invoke("mikoshi:select-project"),

@@ -273,6 +273,9 @@ export interface ProjectSnapshot {
   pathMappings: PathMapping[];
 }
 export interface MikoshiApi {
+  controlWindow(action: "minimize" | "maximize" | "close"): Promise<void>;
+  isWindowMaximized(): Promise<boolean>;
+  onWindowMaximized(listener: (maximized: boolean) => void): () => void;
   getRuntimeInfo(): Promise<RuntimeInfo>;
   listProjects(): Promise<Project[]>;
   selectProject(): Promise<ProjectSnapshot | null>;

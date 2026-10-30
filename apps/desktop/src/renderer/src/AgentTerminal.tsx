@@ -3,18 +3,21 @@ import type { JSX } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import type { AgentTerminalSession } from "../../contracts";
+import { hasTerminalInput } from "./terminal-activity";
 import "@xterm/xterm/css/xterm.css";
 
 interface AgentTerminalProps {
   projectId: string;
   agentId: string;
   disabled: boolean;
+  onInput?: () => void;
 }
 
 export function AgentTerminal({
   projectId,
   agentId,
   disabled,
+  onInput,
 }: AgentTerminalProps): JSX.Element {
   const host = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
@@ -22,6 +25,8 @@ export function AgentTerminal({
   const session = useRef<AgentTerminalSession | null>(null);
   const [currentSession, setCurrentSession] = useState<AgentTerminalSession | null>(null);
   const [error, setError] = useState("");
+  const onInputRef = useRef(onInput);
+  onInputRef.current = onInput;
 
   useEffect(() => {
     if (!host.current) return;
@@ -31,7 +36,7 @@ export function AgentTerminal({
       fontFamily: "Cascadia Code, Consolas, monospace",
       fontSize: 13,
       scrollback: 5000,
-      theme: { background: "#10141b" },
+      theme: { background: "#070d16" },
     });
     const fit = new FitAddon();
     instance.loadAddon(fit);
@@ -69,7 +74,10 @@ export function AgentTerminal({
     resizeObserver.observe(host.current);
     const input = instance.onData((data) => {
       const running = session.current;
-      if (running) void window.mikoshi.writeAgentTerminal(projectId, running.id, data);
+      if (running) {
+        if (hasTerminalInput(data)) onInputRef.current?.();
+        void window.mikoshi.writeAgentTerminal(projectId, running.id, data);
+      }
     });
     void window.mikoshi
       .listAgentTerminals(projectId)

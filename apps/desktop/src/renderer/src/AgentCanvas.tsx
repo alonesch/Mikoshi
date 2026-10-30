@@ -3,6 +3,8 @@ import type { FormEvent, JSX, MouseEvent as ReactMouseEvent, PointerEvent } from
 import type { AgentCanvasState, AgentRole, ProviderId } from "../../contracts";
 import type { AgentCanvasModel, AgentCanvasNode } from "./agent-canvas-model";
 import { AgentTerminal } from "./AgentTerminal";
+import { hasTerminalOutput } from "./terminal-activity";
+import { ScrambleText } from "./ScrambleText";
 
 export interface AgentCanvasCreation {
   provider: ProviderId;
@@ -29,6 +31,15 @@ const providerLabels: Record<ProviderId, string> = {
   antigravity: "Antigravity",
   kimi: "Kimi Code",
 };
+const providerMarks: Record<ProviderId, string> = {
+  codex:
+    "M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 0 0-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 0 1 .476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z",
+  claude:
+    "M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z",
+  antigravity:
+    "M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z",
+  kimi: "m1.053 16.91 9.538 2.55a21 20.981 0 0 0 .06 2.031l5.956 1.592a12 11.99 0 0 1-15.554-6.172m-1.02-5.79 11.352 3.035a21 20.981 0 0 0-.469 2.01l10.817 2.89a12 11.99 0 0 1-1.845 2.004L.658 15.918a12 11.99 0 0 1-.625-4.796m1.593-5.146L13.573 9.17a21 20.981 0 0 0-1.01 1.874l11.297 3.02a21 20.981 0 0 1-.67 2.362l-11.55-3.087L.125 10.26a12 11.99 0 0 1 1.499-4.285ZM6.067 1.58l11.285 3.016a21 20.981 0 0 0-1.688 1.719l7.824 2.091a21 20.981 0 0 1 .513 2.664L2.107 5.218a12 11.99 0 0 1 3.96-3.638M21.68 4.866 7.222 1.003A12 11.99 0 0 1 21.68 4.866",
+};
 
 interface AgentCanvasProps {
   model: AgentCanvasModel;
@@ -43,6 +54,7 @@ interface AgentCanvasProps {
   onDeleteAgent: (agentId: string) => Promise<void>;
   onCreateCanvasAgent: (creation: AgentCanvasCreation) => Promise<boolean>;
   onOpenSettings: () => void;
+  onCanvasBackgroundClick?: () => void;
   onSaveCanvas: (canvas: AgentCanvasState) => Promise<void>;
 }
 
@@ -55,6 +67,7 @@ type DragState =
       pointerY: number;
       x: number;
       y: number;
+      moved: boolean;
     }
   | {
       type: "resize";
@@ -78,6 +91,10 @@ function connectionPath(source: AgentCanvasNode, target: AgentCanvasNode): strin
   return `M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`;
 }
 
+const compactWidth = 420;
+const compactHeight = 76;
+const activityDuration = 8000;
+
 export function AgentCanvas({
   model,
   selectedAgentId,
@@ -91,9 +108,14 @@ export function AgentCanvas({
   onDeleteAgent,
   onCreateCanvasAgent,
   onOpenSettings,
+  onCanvasBackgroundClick,
   onSaveCanvas,
 }: AgentCanvasProps): JSX.Element {
   const [canvas, setCanvas] = useState(model);
+  const [collapsedAgentIds, setCollapsedAgentIds] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<AgentCanvasNode | null>(null);
+  const [activeAgentIds, setActiveAgentIds] = useState<Set<string>>(new Set());
+  const activityTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const [connectingFrom, setConnectingFrom] = useState("");
   const [activeTool, setActiveTool] = useState<"select" | "terminal">("select");
   const [creationPosition, setCreationPosition] = useState<{
@@ -115,8 +137,58 @@ export function AgentCanvas({
   );
   const drag = useRef<DragState | null>(null);
   const board = useRef<HTMLDivElement>(null);
+  const cancelDeleteButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => setCanvas(model), [model]);
+  useEffect(() => {
+    if (!deleteTarget) return;
+    cancelDeleteButton.current?.focus();
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setDeleteTarget(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deleteTarget]);
+  function markAgentActive(agentId: string): void {
+    const previousTimer = activityTimers.current.get(agentId);
+    if (previousTimer) clearTimeout(previousTimer);
+    setActiveAgentIds((previous) => new Set(previous).add(agentId));
+    activityTimers.current.set(
+      agentId,
+      setTimeout(() => {
+        activityTimers.current.delete(agentId);
+        setActiveAgentIds((previous) => {
+          const next = new Set(previous);
+          next.delete(agentId);
+          return next;
+        });
+      }, activityDuration),
+    );
+  }
+  useEffect(() => {
+    setActiveAgentIds(new Set());
+    const timers = activityTimers.current;
+    const unsubscribe = window.mikoshi.onAgentTerminalEvent((event) => {
+      if (event.projectId !== projectId) return;
+      if (event.type === "data" && hasTerminalOutput(event.data ?? "")) {
+        markAgentActive(event.agentId);
+      } else if (event.type === "exit") {
+        const previousTimer = timers.get(event.agentId);
+        if (previousTimer) clearTimeout(previousTimer);
+        timers.delete(event.agentId);
+        setActiveAgentIds((previous) => {
+          const next = new Set(previous);
+          next.delete(event.agentId);
+          return next;
+        });
+      }
+    });
+    return () => {
+      unsubscribe();
+      timers.forEach(clearTimeout);
+      timers.clear();
+    };
+  }, [projectId]);
   useEffect(() => {
     const defaultProvider = availableProviders[0];
     if (!defaultProvider) return;
@@ -145,8 +217,10 @@ export function AgentCanvas({
   }
 
   function placeTerminal(event: ReactMouseEvent<HTMLDivElement>): void {
-    if (activeTool !== "terminal" || !board.current) return;
     const target = event.target;
+    if (!(target instanceof Element) || !target.closest(".canvas-node, button"))
+      onCanvasBackgroundClick?.();
+    if (activeTool !== "terminal" || !board.current) return;
     if (target instanceof Element && target.closest(".canvas-node")) return;
     const rect = board.current.getBoundingClientRect();
     setCreationPosition({
@@ -204,6 +278,15 @@ export function AgentCanvas({
     drag.current = state;
   }
 
+  function toggleCollapsed(agentId: string): void {
+    setCollapsedAgentIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(agentId)) next.delete(agentId);
+      else next.add(agentId);
+      return next;
+    });
+  }
+
   function handlePointerMove(event: PointerEvent<HTMLDivElement>): void {
     const current = drag.current;
     if (!current) return;
@@ -221,6 +304,15 @@ export function AgentCanvas({
       });
       return;
     }
+    if (current.type === "move") {
+      if (
+        Math.hypot(event.clientX - current.pointerX, event.clientY - current.pointerY) <
+          5 &&
+        !current.moved
+      )
+        return;
+      current.moved = true;
+    }
     setCanvas({
       ...canvas,
       nodes: canvas.nodes.map((node) => {
@@ -237,8 +329,14 @@ export function AgentCanvas({
   }
 
   async function finishDrag(): Promise<void> {
-    if (!drag.current) return;
+    const current = drag.current;
+    if (!current) return;
     drag.current = null;
+    if (current.type === "move" && !current.moved) {
+      onSelectAgent(current.agentId);
+      toggleCollapsed(current.agentId);
+      return;
+    }
     await persist(canvas);
   }
 
@@ -289,7 +387,14 @@ export function AgentCanvas({
     });
   }
 
-  const nodeById = new Map(canvas.nodes.map((node) => [node.agentId, node]));
+  const nodeById = new Map(
+    canvas.nodes.map((node) => [
+      node.agentId,
+      collapsedAgentIds.has(node.agentId)
+        ? { ...node, width: Math.min(node.width, compactWidth), height: compactHeight }
+        : node,
+    ]),
+  );
 
   return (
     <section className="agent-canvas-section">
@@ -379,7 +484,7 @@ export function AgentCanvas({
                   refX="7"
                   refY="4"
                 >
-                  <path d="M0,0 L8,4 L0,8 z" fill="#91d8c2" />
+                  <path d="M0,0 L8,4 L0,8 z" fill="#51e7f2" />
                 </marker>
               </defs>
               {canvas.connections.map((connection) => {
@@ -394,106 +499,184 @@ export function AgentCanvas({
                 ) : null;
               })}
             </svg>
-            {canvas.nodes.map((node) => (
-              <article
-                aria-label={`Agente ${node.name}`}
-                className={
-                  "canvas-node " + (node.agentId === selectedAgentId ? "selected" : "")
-                }
-                key={node.agentId}
-                style={{
-                  height: node.height,
-                  left: node.x,
-                  top: node.y,
-                  width: node.width,
-                }}
-              >
-                <header
-                  className="canvas-node-header"
+            {canvas.nodes.map((node) => {
+              const collapsed = collapsedAgentIds.has(node.agentId);
+              const active =
+                node.status === "running" || activeAgentIds.has(node.agentId);
+              return (
+                <article
+                  aria-label={`Agente ${node.name}`}
                   onPointerDown={(event) => {
-                    if (event.target instanceof Element && event.target.closest("button"))
+                    if (
+                      event.target instanceof Element &&
+                      event.target.closest(".canvas-node-header")
+                    )
                       return;
-                    beginDrag(event, {
-                      type: "move",
-                      agentId: node.agentId,
-                      pointerX: event.clientX,
-                      pointerY: event.clientY,
-                      x: node.x,
-                      y: node.y,
-                    });
+                    onSelectAgent(node.agentId);
+                  }}
+                  className={`canvas-node${node.agentId === selectedAgentId ? " selected" : ""}${collapsed ? " collapsed" : ""}${active ? " active" : ""}`}
+                  key={node.agentId}
+                  style={{
+                    height: collapsed ? compactHeight : node.height,
+                    left: node.x,
+                    top: node.y,
+                    width: collapsed ? Math.min(node.width, compactWidth) : node.width,
                   }}
                 >
-                  <strong>{node.name}</strong>
-                  <button
-                    aria-label={`Selecionar ${node.name}`}
-                    disabled={disabled}
-                    onClick={() => onSelectAgent(node.agentId)}
-                    title="Selecionar agente"
-                  >
-                    ↗
-                  </button>
-                  <button
-                    aria-label={`Excluir terminal ${node.name}`}
-                    className="canvas-node-delete"
-                    disabled={disabled}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Excluir o terminal "${node.name}" do workspace? A sessão ativa será encerrada.`,
+                  <div className="canvas-node-frame">
+                    <header
+                      className="canvas-node-header"
+                      onPointerDown={(event) => {
+                        if (
+                          event.target instanceof Element &&
+                          event.target.closest("button")
                         )
-                      )
-                        void onDeleteAgent(node.agentId);
-                    }}
-                    title="Excluir terminal"
-                  >
-                    ×
-                  </button>
-                </header>
-                <div className="canvas-node-body">
-                  <span>
-                    {node.role} · {node.provider}
-                  </span>
-                  <small>{statusLabels[node.status] ?? node.status}</small>
-                  {node.currentTask && <small>{node.currentTask}</small>}
-                  {projectId && (
-                    <AgentTerminal
-                      projectId={projectId}
-                      agentId={node.agentId}
+                          return;
+                        beginDrag(event, {
+                          type: "move",
+                          agentId: node.agentId,
+                          pointerX: event.clientX,
+                          pointerY: event.clientY,
+                          x: node.x,
+                          y: node.y,
+                          moved: false,
+                        });
+                      }}
+                    >
+                      <div
+                        className="canvas-node-heading"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${collapsed ? "Expandir" : "Recolher"} ${node.name}`}
+                        aria-expanded={!collapsed}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onSelectAgent(node.agentId);
+                            toggleCollapsed(node.agentId);
+                          }
+                        }}
+                      >
+                        <strong>{node.name}</strong>
+                        <small>
+                          {active ? "EM USO" : (statusLabels[node.status] ?? node.status)}
+                        </small>
+                      </div>
+                      <span
+                        aria-label={providerLabels[node.provider]}
+                        className="canvas-provider-mark"
+                        role="img"
+                        title={providerLabels[node.provider]}
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                          <path d={providerMarks[node.provider]} />
+                        </svg>
+                      </span>
+                      <button
+                        aria-label={`Excluir terminal ${node.name}`}
+                        className="canvas-node-delete"
+                        disabled={disabled}
+                        onClick={() => setDeleteTarget(node)}
+                        title="Excluir terminal"
+                      >
+                        ×
+                      </button>
+                    </header>
+                    {!collapsed && (
+                      <div className="canvas-node-body">
+                        <span>
+                          {node.role} · {node.provider}
+                        </span>
+                        <small>{statusLabels[node.status] ?? node.status}</small>
+                        {node.currentTask && <small>{node.currentTask}</small>}
+                        {projectId && (
+                          <AgentTerminal
+                            projectId={projectId}
+                            agentId={node.agentId}
+                            disabled={disabled}
+                            onInput={() => markAgentActive(node.agentId)}
+                          />
+                        )}
+                        <button
+                          className={connectingFrom === node.agentId ? "selected" : ""}
+                          disabled={disabled}
+                          onClick={() => connectAgent(node.agentId)}
+                        >
+                          <ScrambleText
+                            text={
+                              connectingFrom === node.agentId
+                                ? "Origem selecionada"
+                                : connectingFrom
+                                  ? "Conectar destino"
+                                  : "Conectar a outro agente"
+                            }
+                          />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {!collapsed && (
+                    <button
+                      aria-label={`Redimensionar ${node.name}`}
+                      className="canvas-node-resize"
                       disabled={disabled}
+                      onPointerDown={(event) =>
+                        beginDrag(event, {
+                          type: "resize",
+                          agentId: node.agentId,
+                          pointerX: event.clientX,
+                          pointerY: event.clientY,
+                          width: node.width,
+                          height: node.height,
+                        })
+                      }
                     />
                   )}
-                  <button
-                    className={connectingFrom === node.agentId ? "selected" : ""}
-                    disabled={disabled}
-                    onClick={() => connectAgent(node.agentId)}
-                  >
-                    {connectingFrom === node.agentId
-                      ? "Origem selecionada"
-                      : connectingFrom
-                        ? "Conectar destino"
-                        : "Conectar a outro agente"}
-                  </button>
-                </div>
-                <button
-                  aria-label={`Redimensionar ${node.name}`}
-                  className="canvas-node-resize"
-                  disabled={disabled}
-                  onPointerDown={(event) =>
-                    beginDrag(event, {
-                      type: "resize",
-                      agentId: node.agentId,
-                      pointerX: event.clientX,
-                      pointerY: event.clientY,
-                      width: node.width,
-                      height: node.height,
-                    })
-                  }
-                />
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
+      {deleteTarget && (
+        <div
+          className="mikoshi-dialog-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setDeleteTarget(null);
+          }}
+        >
+          <div
+            aria-labelledby="delete-agent-title"
+            aria-modal="true"
+            className="mikoshi-confirm-dialog"
+            role="dialog"
+          >
+            <span className="mikoshi-dialog-eyebrow">TERMINAL / REMOÇÃO</span>
+            <h2 id="delete-agent-title">Excluir {deleteTarget.name}?</h2>
+            <p>O cartão será removido do canvas e a sessão ativa será encerrada.</p>
+            <div className="mikoshi-dialog-actions">
+              <button
+                className="secondary"
+                ref={cancelDeleteButton}
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="danger"
+                disabled={disabled}
+                onClick={() => {
+                  const agentId = deleteTarget.agentId;
+                  setDeleteTarget(null);
+                  void onDeleteAgent(agentId);
+                }}
+              >
+                Excluir terminal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="canvas-zoom" aria-label="Zoom do canvas">
         <button
           aria-label="Diminuir zoom"
@@ -531,19 +714,28 @@ export function AgentCanvas({
             onSubmit={(event) => void createTerminal(event)}
             role="dialog"
           >
+            <div className="terminal-creation-overline">
+              MIKOSHI / INSTALAÇÃO DE AGENTE
+            </div>
             <div className="terminal-creation-header">
               <button
                 className="text-button"
                 type="button"
                 onClick={() => setCreationPosition(null)}
               >
-                Cancelar
+                <ScrambleText text="Cancelar" />
               </button>
-              <strong>Novo terminal</strong>
+              <strong>
+                <ScrambleText text="NOVO TERMINAL" />
+              </strong>
               <button disabled={disabled || !availableProviders.length} type="submit">
-                Criar
+                <ScrambleText text="INSTALAR" />
               </button>
             </div>
+            <p className="terminal-creation-lead">
+              Selecione a interface, configure o agente e instale o terminal no canvas.
+            </p>
+            <div className="terminal-creation-section-label">01 / INTERFACE</div>
             <div className="provider-quick-picks" aria-label="Provider">
               {availableProviders.map((provider) => (
                 <button
@@ -554,15 +746,16 @@ export function AgentCanvas({
                   onClick={() => setTerminalProvider(provider)}
                   type="button"
                 >
-                  {providerLabels[provider]}
+                  <ScrambleText text={providerLabels[provider]} />
                 </button>
               ))}
               {!availableProviders.length && (
                 <button className="secondary" onClick={onOpenSettings} type="button">
-                  Configurar providers
+                  <ScrambleText text="Configurar providers" />
                 </button>
               )}
             </div>
+            <div className="terminal-creation-section-label">02 / CONFIGURAÇÃO</div>
             <div
               className="terminal-creation-tabs"
               role="tablist"
@@ -577,11 +770,18 @@ export function AgentCanvas({
                   role="tab"
                   type="button"
                 >
-                  {tab === "details"
-                    ? "Detalhes"
-                    : tab === "appearance"
-                      ? "Aparência"
-                      : "Agente"}
+                  <span className="terminal-tab-index">
+                    {tab === "details" ? "01" : tab === "appearance" ? "02" : "03"}
+                  </span>
+                  <ScrambleText
+                    text={
+                      tab === "details"
+                        ? "Detalhes"
+                        : tab === "appearance"
+                          ? "Aparência"
+                          : "Agente"
+                    }
+                  />
                 </button>
               ))}
             </div>
@@ -631,21 +831,21 @@ export function AgentCanvas({
                     onClick={() => setAgentPreset("orchestrator")}
                     type="button"
                   >
-                    Orquestrador
+                    <ScrambleText text="Orquestrador" />
                   </button>
                   <button
                     className={agentMode === "free" ? "active" : ""}
                     onClick={() => setAgentPreset("free")}
                     type="button"
                   >
-                    Chat livre
+                    <ScrambleText text="Chat livre" />
                   </button>
                   <button
                     className={agentMode === "specialist" ? "active" : ""}
                     onClick={() => setAgentPreset("specialist")}
                     type="button"
                   >
-                    Especialista
+                    <ScrambleText text="Especialista" />
                   </button>
                 </div>
                 {agentMode === "specialist" && (

@@ -125,6 +125,20 @@ export function registerIpc(store: ProjectStore, provider: AgentRuntime): void {
       }
     });
   }
+  handle("control-window", (action) => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (!window) return;
+    if (action === "minimize") window.minimize();
+    else if (action === "maximize") {
+      if (window.isMaximized()) window.unmaximize();
+      else window.maximize();
+    } else if (action === "close") window.close();
+    else throw new Error("Ação de janela inválida.");
+  });
+  handle(
+    "is-window-maximized",
+    () => BrowserWindow.getFocusedWindow()?.isMaximized() ?? false,
+  );
   handle("get-runtime-info", () => ({
     platform: process.platform,
     electronVersion: process.versions.electron,
